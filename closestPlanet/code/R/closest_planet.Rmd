@@ -1,0 +1,64 @@
+---
+title: "The closest planet to Earth"
+author: "Neil Saunders"
+date: "`r Sys.time()`"
+output:
+  github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(pander)
+
+read_planet_data <- function(datafile) {
+  read_table2(datafile,
+              col_names = FALSE, 
+              col_types = cols(X1 = col_date(format = "%Y-%b-%d"))) %>% 
+                  select(Date = X1, OWLT = X28)
+}
+
+theme_set(theme_bw())
+```
+
+# Introduction
+Which planet is closest to Earth, most of the time?
+
+This [More Or Less](https://www.bbc.co.uk/sounds/play/m0001y9p) podcast claims that the answer is Mercury.
+
+# Datasets
+We retrieve ephemeris data from the [JPL Horizons](https://ssd.jpl.nasa.gov/horizons.cgi) system, edit the text output manually and read it into R.
+
+It looks like this. The `Date` range is January 1 2018 to December 31 2019, and `OWLT` = one-way light time. 
+
+```{r read-data}
+planets <- list(mercury = read_planet_data("../../data/mercury.txt"),
+                venus =   read_planet_data("../../data/venus.txt"),
+                mars    = read_planet_data("../../data/mars.txt")
+                ) %>% 
+  bind_rows(.id = "planet")
+
+planets %>% 
+  slice(1:10) %>% 
+  pander(justify = "right")
+```
+
+There are `r nrow(planets)` observations (365 days x 2 x 3 planets).
+
+# Visualisation
+A very simple `ggplot2` of one-way light time versus date, with lines coloured by planet.
+
+```{r plot-data}
+planets %>% 
+  ggplot(aes(Date, OWLT)) +
+    geom_line(aes(color = planet)) +
+    labs(y = "one-way light time (minutes)",
+         title = "One-way light time from Earth to the inner planets",
+         subtitle = "2018 - 2019")
+```
+
+# Conclusion
+At a given time any of Mercury, Venus or Mars may be closest to the Earth. The chart shows, for example, that Mars was closest around July 2018 and Venus in late 2018/early 2019.
+
+Throughout 2019 both Mars and Venus are moving away from Earth, leaving Mercury as the closest planet for the majority of the year.
